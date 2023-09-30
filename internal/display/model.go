@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hizkifw/gex/pkg/core"
 )
@@ -29,29 +30,36 @@ var (
 )
 
 type Model struct {
-	Eb            *core.EditorBuffer
-	Width, Height int
-	Nrows, Ncols  int
-	ViewRow       int
-	Mode          EditingMode
-	ActiveColumn  ActiveColumn
+	eb            *core.EditorBuffer
+	width, height int
+	nrows, ncols  int
+	viewRow       int
+	mode          EditingMode
+	activeColumn  ActiveColumn
 
 	ResponsiveCols bool
+
+	// Command mode text field
+	cmdText textinput.Model
 }
 
 func NewModel() Model {
-	return Model{
-		Eb:           core.NewEditorBuffer("", EmptyReadSeeker),
-		Width:        0,
-		Height:       0,
-		Nrows:        0,
-		Ncols:        16,
-		ViewRow:      0,
-		Mode:         ModeNormal,
-		ActiveColumn: ActiveColumnHex,
+	m := Model{
+		eb:           core.NewEditorBuffer("", EmptyReadSeeker),
+		width:        0,
+		height:       0,
+		nrows:        0,
+		ncols:        16,
+		viewRow:      0,
+		mode:         ModeNormal,
+		activeColumn: ActiveColumnHex,
 
 		ResponsiveCols: false,
+
+		cmdText: textinput.New(),
 	}
+	m.SetMode(ModeNormal)
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
@@ -63,31 +71,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Get the current terminal size on resize
 	case tea.WindowSizeMsg:
-		m.Width = msg.Width
-		m.Height = msg.Height
+		m.width = msg.Width
+		m.height = msg.Height
+		m.cmdText.Width = msg.Width
 
-		cols, rows := CalculateViewSize(m.Width, m.Height)
-		m.Nrows = rows
+		cols, rows := CalculateViewSize(m.width, m.height)
+		m.nrows = rows
 		if m.ResponsiveCols {
-			m.Ncols = cols
+			m.ncols = cols
 		}
 		m.ScrollToCursor()
 
 	// Handle keypresses
 	case tea.KeyMsg:
 
-		switch m.Mode {
+		switch m.mode {
 		case ModeNormal:
-			return handleKeypressNormal(m, msg)
+			return HandleKeypressNormal(m, msg)
 
 		case ModeInsert:
-			return handleKeypressInsert(m, msg)
+			return HandleKeypressInsert(m, msg)
 
 		case ModeVisual:
-			return handleKeypressVisual(m, msg)
+			return HandleKeypressVisual(m, msg)
 
 		case ModeCommand:
-			return handleKeypressCommand(m, msg)
+			return HandleKeypressCommand(m, msg)
 		}
 	}
 
@@ -101,7 +110,7 @@ func (m Model) View() string {
 		v = err.Error()
 	}
 
-	return fmt.Sprintf("%s\n%s\n", v, m.Mode)
+	return fmt.Sprintf("%s\n%s\n%s", v, m.mode, m.cmdText.View())
 }
 
 func (m *Model) LoadFile(name string) error {
@@ -109,17 +118,36 @@ func (m *Model) LoadFile(name string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", name, err)
 	}
-	m.Eb = core.NewEditorBuffer(name, f)
+	m.eb = core.NewEditorBuffer(name, f)
 	return nil
 }
 
 // ScrollToCursor scrolls the view so that the cursor is visible.
 func (m *Model) ScrollToCursor() {
-	viewStart := int64(m.ViewRow) * int64(m.Ncols)
-	viewEnd := viewStart + int64(m.Ncols)*int64(m.Nrows)
-	if m.Eb.Cursor < viewStart {
-		m.ViewRow = int(m.Eb.Cursor / int64(m.Ncols))
-	} else if m.Eb.Cursor >= viewEnd {
-		m.ViewRow = int(m.Eb.Cursor/int64(m.Ncols)) - m.Nrows + 1
+	viewStart := int64(m.viewRow) * int64(m.ncols)
+	viewEnd := viewStart + int64(m.ncols)*int64(m.nrows)
+	if m.eb.Cursor < viewStart {
+		m.viewRow = int(m.eb.Cursor / int64(m.ncols))
+	} else if m.eb.Cursor >= viewEnd {
+		m.viewRow = int(m.eb.Cursor/int64(m.ncols)) - m.nrows + 1
 	}
+}
+
+// SetMode sets the editing mode.
+func (m *Model) SetMode(mode EditingMode) {
+	m.mode = mode
+
+	m.cmdText.SetValue("")
+	if mode == ModeCommand {
+		m.cmdText.Prompt = ":"
+		m.cmdText.Focus()
+	} else {
+		m.cmdText.Prompt = ""
+		m.cmdText.Blur()
+	}
+}
+
+// StatusMessage sets the status message.
+func (m *Model) StatusMessage(msg string) {
+	m.cmdText.SetValue(msg)
 }

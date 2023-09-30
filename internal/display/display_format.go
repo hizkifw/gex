@@ -11,17 +11,17 @@ import (
 // RenderHexView renders the hex dump.
 func (m Model) RenderHexView() (string, error) {
 	// Calculate the selection start and end positions
-	selectionStart, selectionEnd := m.Eb.GetSelectionRange()
+	selectionStart, selectionEnd := m.eb.GetSelectionRange()
 
-	r := m.Eb.ReadSeeker()
-	offset := int64(m.ViewRow * m.Ncols)
+	r := m.eb.ReadSeeker()
+	offset := int64(m.viewRow * m.ncols)
 
 	if _, err := r.Seek(offset, io.SeekStart); err != nil {
 		return "", err
 	}
 
 	// Read view from the underlying buffer
-	buf := make([]byte, m.Nrows*m.Ncols)
+	buf := make([]byte, m.nrows*m.ncols)
 	n, err := r.Read(buf)
 	if err != nil && err != io.EOF {
 		return "", err
@@ -30,12 +30,12 @@ func (m Model) RenderHexView() (string, error) {
 	var sbAddr strings.Builder
 	var sbHex strings.Builder
 	var sbAscii strings.Builder
-	for row := 0; row < m.Nrows; row++ {
+	for row := 0; row < m.nrows; row++ {
 		// Address column
-		sbAddr.WriteString(addrStyle.Render(fmt.Sprintf("%08x", m.Ncols*(row+m.ViewRow))))
+		sbAddr.WriteString(addrStyle.Render(fmt.Sprintf("%08x", m.ncols*(row+m.viewRow))))
 
-		for col := 0; col < m.Ncols; col++ {
-			i := row*m.Ncols + col
+		for col := 0; col < m.ncols; col++ {
+			i := row*m.ncols + col
 			pos := int64(i) + offset
 			if col%8 == 0 {
 				sbHex.WriteString(" ")
@@ -43,9 +43,9 @@ func (m Model) RenderHexView() (string, error) {
 
 			// Highlight selection
 			selected := pos >= selectionStart && pos <= selectionEnd
-			cursor := pos == m.Eb.Cursor
-			styleHex := MakeStyle(m.ActiveColumn == ActiveColumnHex, selected, cursor)
-			styleAscii := MakeStyle(m.ActiveColumn == ActiveColumnAscii, selected, cursor)
+			cursor := pos == m.eb.Cursor
+			styleHex := MakeStyle(m.activeColumn == ActiveColumnHex, selected, cursor)
+			styleAscii := MakeStyle(m.activeColumn == ActiveColumnAscii, selected, cursor)
 
 			// Hex column
 			if i >= n {
@@ -64,7 +64,7 @@ func (m Model) RenderHexView() (string, error) {
 			}
 		}
 
-		if row < m.Nrows-1 {
+		if row < m.nrows-1 {
 			sbAddr.WriteString("\n")
 			sbHex.WriteString(" \n")
 			sbAscii.WriteString("\n")

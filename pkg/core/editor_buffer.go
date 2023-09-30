@@ -20,6 +20,9 @@ type EditorBuffer struct {
 	// The underlying buffer containing the actual data.
 	Buffer io.ReadSeeker
 
+	// Clipboard holds the current clipboard contents.
+	Clipboard []byte
+
 	// The undo stack. When changes are made to the buffer, they are pushed
 	// here. This stack serves as the source of truth for the buffer's contents.
 	UndoStack []Change
@@ -38,8 +41,10 @@ func NewEditorBuffer(name string, buffer io.ReadSeeker) *EditorBuffer {
 	return &EditorBuffer{
 		Name:      name,
 		Buffer:    buffer,
+		Clipboard: make([]byte, 0),
 		UndoStack: make([]Change, 0),
 		RedoStack: make([]Change, 0),
+		Preview:   nil,
 	}
 }
 
@@ -120,4 +125,14 @@ func (b *EditorBuffer) Size() int64 {
 	rs := b.ReadSeeker()
 	size, _ := rs.Seek(0, io.SeekEnd)
 	return size
+}
+
+// CopySelection copies the current selection to the clipboard.
+func (b *EditorBuffer) CopySelection() (int, error) {
+	start, end := b.GetSelectionRange()
+	// Add 1 to the end because the range is inclusive
+	b.Clipboard = make([]byte, end-start+1)
+	rs := b.ReadSeeker()
+	rs.Seek(start, io.SeekStart)
+	return rs.Read(b.Clipboard)
 }

@@ -8,15 +8,20 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// RenderView renders a hex dump and ASCII view of the given ReadSeeker.
-func RenderView(r io.ReadSeeker, ncols, nrows, startRow int, selectionStart, selectionEnd int64) (string, error) {
-	offset := int64(startRow * ncols)
+// RenderHexView renders the hex dump.
+func (m Model) RenderHexView() (string, error) {
+	// Calculate the selection start and end positions
+	selectionStart, selectionEnd := m.Eb.GetSelectionRange()
+
+	r := m.Eb.ReadSeeker()
+	offset := int64(m.ViewRow * m.Ncols)
+
 	if _, err := r.Seek(offset, io.SeekStart); err != nil {
 		return "", err
 	}
 
 	// Read view from the underlying buffer
-	buf := make([]byte, ncols*nrows)
+	buf := make([]byte, m.Nrows*m.Ncols)
 	n, err := r.Read(buf)
 	if err != nil && err != io.EOF {
 		return "", err
@@ -25,33 +30,28 @@ func RenderView(r io.ReadSeeker, ncols, nrows, startRow int, selectionStart, sel
 	var sbAddr strings.Builder
 	var sbHex strings.Builder
 	var sbAscii strings.Builder
-	for row := 0; row < nrows; row++ {
+	for row := 0; row < m.Nrows; row++ {
 		// Address column
-		sbAddr.WriteString(addrStyle.Render(fmt.Sprintf("%08x", ncols*(row+startRow))))
+		sbAddr.WriteString(addrStyle.Render(fmt.Sprintf("%08x", m.Ncols*(row+m.ViewRow))))
 
-		for col := 0; col < ncols; col++ {
-			i := row*ncols + col
+		for col := 0; col < m.Ncols; col++ {
+			i := row*m.Ncols + col
 			pos := int64(i) + offset
 			if col%8 == 0 {
 				sbHex.WriteString(" ")
 			}
 
 			// Highlight selection
-			var styleHex *lipgloss.Style
-			var styleAscii *lipgloss.Style
-			if pos >= selectionStart && pos <= selectionEnd {
-				styleHex = &hexSelectedStyle
-				styleAscii = &asciiSelectedStyle
-			} else {
-				styleHex = &hexNormalStyle
-				styleAscii = &asciiNormalStyle
-			}
+			selected := pos >= selectionStart && pos <= selectionEnd
+			cursor := pos == m.Eb.Cursor
+			styleHex := MakeStyle(m.ActiveColumn == ActiveColumnHex, selected, cursor)
+			styleAscii := MakeStyle(m.ActiveColumn == ActiveColumnAscii, selected, cursor)
 
 			// Hex column
 			if i >= n {
 				sbHex.WriteString(styleHex.Render("  "))
 			} else {
-				sbHex.WriteString(styleHex.Render(fmt.Sprintf("%02x", buf[i])))
+				sbHex.WriteString(styleHex.Render(fmt.Sprintf("%02x ", buf[i])))
 			}
 
 			// ASCII column
@@ -64,7 +64,7 @@ func RenderView(r io.ReadSeeker, ncols, nrows, startRow int, selectionStart, sel
 			}
 		}
 
-		if row < nrows-1 {
+		if row < m.Nrows-1 {
 			sbAddr.WriteString("\n")
 			sbHex.WriteString(" \n")
 			sbAscii.WriteString("\n")

@@ -5,34 +5,31 @@ import (
 )
 
 var (
-	// Style for the hex dump address
+	fgPrimaryColor   = lipgloss.Color("#eeeeee")
+	fgSecondaryColor = lipgloss.Color("#999999")
+	bgSelectedColor  = lipgloss.Color("#1E3A8A")
+	bgCursorColor    = lipgloss.Color("#1D4ED8")
+
 	addrStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#999999")).
-			Width(9).
+			Foreground(fgSecondaryColor).
 			Align(lipgloss.Right).
 			PaddingRight(1)
-
-	// Style for the hex dump hex values
-	hexNormalStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#eeeeee")).
-			Width(3).
-			PaddingRight(1)
-
-	// Style for the hex dump hex values that are part of the selection
-	hexSelectedStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#222222")).
-				Background(lipgloss.Color("#eeeeee")).
-				Width(3).
-				PaddingRight(1)
-
-	// Style for the hex dump ASCII values
-	asciiNormalStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#999999")).
-				Width(1)
-
-	// Style for the hex dump ASCII values that are part of the selection
-	asciiSelectedStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#222222")).
-				Background(lipgloss.Color("#eeeeee")).
-				Width(1)
 )
+
+func MakeStyle(primary, selected, cursor bool) lipgloss.Style {
+	style := lipgloss.NewStyle()
+
+	if primary {
+		style = style.Foreground(fgPrimaryColor)
+	} else {
+		style = style.Foreground(fgSecondaryColor)
+	}
+
+	if cursor {
+		style = style.Background(bgCursorColor)
+	} else if selected {
+		style = style.Background(bgSelectedColor)
+	}
+
+	return style
+}

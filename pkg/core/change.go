@@ -2,6 +2,8 @@ package core
 
 import (
 	"io"
+
+	"github.com/hizkifw/gex/pkg/util"
 )
 
 // Change represents a change that has been made to a buffer. Changes are
@@ -69,7 +71,7 @@ func (r *changeReadSeeker) Read(out []byte) (int, error) {
 		if _, err := r.r.Seek(r.p, io.SeekStart); err != nil {
 			return int(r.p - startPos), err
 		}
-		maxRead := clamp(int(r.c.Position-r.p), 0, len(out))
+		maxRead := util.Clamp(int(r.c.Position-r.p), 0, len(out))
 		n, err := r.r.Read(out[:maxRead])
 		r.p += int64(n)
 		if err != nil {

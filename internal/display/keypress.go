@@ -9,25 +9,31 @@ func handleCursorMovement(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 
 	case "up", "k":
+		// Move cursor up
 		if m.Eb.Cursor >= int64(m.Ncols) {
 			m.Eb.Cursor -= int64(m.Ncols)
 		}
 
 	case "down", "j":
+		// Move cursor down
 		m.Eb.Cursor += int64(m.Ncols)
 
 	case "left", "h":
+		// Move cursor left
 		if m.Eb.Cursor > 0 {
 			m.Eb.Cursor--
 		}
 
 	case "right", "l":
+		// Move cursor right
 		m.Eb.Cursor++
 
-	case "0":
+	case "0", "home":
+		// Move cursor to start of line
 		m.Eb.Cursor -= m.Eb.Cursor % int64(m.Ncols)
 
-	case "$":
+	case "$", "end":
+		// Move cursor to end of line
 		m.Eb.Cursor += int64(m.Ncols) - (m.Eb.Cursor % int64(m.Ncols)) - 1
 
 	case "w":
@@ -48,10 +54,10 @@ func handleCursorMovement(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "G":
 		m.Eb.Cursor = m.Eb.Size() - 1
 
-	case "ctrl+d":
+	case "ctrl+d", "pgdown":
 		m.Eb.Cursor += int64(m.Ncols) * int64(m.Nrows)
 
-	case "ctrl+u":
+	case "ctrl+u", "pgup":
 		m.Eb.Cursor -= int64(m.Ncols) * int64(m.Nrows)
 	}
 
@@ -63,27 +69,61 @@ func handleCursorMovement(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	}
 
 	// Scroll cursor into view
-	viewStart := int64(m.ViewRow) * int64(m.Ncols)
-	viewEnd := viewStart + int64(m.Ncols)*int64(m.Nrows)
-	if m.Eb.Cursor < viewStart {
-		m.ViewRow = int(m.Eb.Cursor / int64(m.Ncols))
-	} else if m.Eb.Cursor >= viewEnd {
-		m.ViewRow = int(m.Eb.Cursor/int64(m.Ncols)) - m.Nrows + 1
-	}
+	m.ScrollToCursor()
 
 	return m, nil
 }
 
 func handleAction(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
-	switch msg.String() {
+	start, _ := m.Eb.GetSelectionRange()
+	key := msg.String()
+	handled := true
 
-	// The "x" key deletes the character under the cursor
-	case "x":
-		m.Eb.PreviewChange(&core.Change{Position: m.Eb.SelectionStart, Removed: 1 + m.Eb.Cursor - m.Eb.SelectionStart, Data: []byte{}})
+	switch key {
+
+	case "x", "y":
+		n, err := m.Eb.CopySelection()
+		if err != nil {
+			panic(err)
+		}
+
+		if key == "x" {
+			// Delete byte under cursor
+			m.Eb.PreviewChange(&core.Change{Position: start, Removed: int64(n), Data: []byte{}})
+			m.Eb.CommitChange()
+		}
+
+	case "p", "P":
+		// Paste clipboard
+		removed := 0
+		clipboard := m.Eb.Clipboard
+
+		// If in visual mode, delete selection first
+		if m.Mode == ModeVisual {
+			n, err := m.Eb.CopySelection()
+			if err != nil {
+				panic(err)
+			}
+			removed = n
+		}
+
+		if key == "p" && m.Mode == ModeNormal {
+			// Paste after cursor
+			start++
+		}
+
+		m.Eb.PreviewChange(&core.Change{Position: start, Removed: int64(removed), Data: clipboard})
 		m.Eb.CommitChange()
-		m.Eb.Cursor = m.Eb.SelectionStart
-		m.Mode = ModeNormal
+		start += int64(len(clipboard)) - 1
 
+	default:
+		handled = false
+	}
+
+	if handled {
+		m.Eb.Cursor = start
+		m.Eb.SelectionStart = start
+		m.Mode = ModeNormal
 	}
 
 	return m, nil
@@ -92,31 +132,44 @@ func handleAction(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 func handleKeypressNormal(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 
-	// The "i" key enters insert mode
 	case "i":
+		// Enter insert mode
 		m.Mode = ModeInsert
 		m.Eb.PreviewChange(&core.Change{Position: m.Eb.Cursor, Removed: 0, Data: []byte{}})
 
-	// The "v" key enters visual mode
+	case "a":
+		// Enter insert mode after cursor
+		m.Eb.Cursor++
+		m.Mode = ModeInsert
+		m.Eb.PreviewChange(&core.Change{Position: m.Eb.Cursor, Removed: 0, Data: []byte{}})
+
 	case "v":
+		// Enter visual mode
 		m.Mode = ModeVisual
 
-	// The ":" key enters command mode
 	case ":":
+		// Enter command mode
 		m.Mode = ModeCommand
 
-	// These keys should exit the program.
 	case "ctrl+c", "q":
+		// Exit program
 		return m, tea.Quit
 
-	// The "u" key undoes the last change
 	case "u":
+		// Undo last change
 		m.Eb.Undo()
 
-	// The "ctrl+r" key redoes the last change
 	case "ctrl+r":
+		// Redo last change
 		m.Eb.Redo()
 
+	case "tab":
+		// Toggle active column
+		if m.ActiveColumn == ActiveColumnHex {
+			m.ActiveColumn = ActiveColumnAscii
+		} else {
+			m.ActiveColumn = ActiveColumnHex
+		}
 	}
 
 	m, _ = handleAction(m, msg)
@@ -129,8 +182,8 @@ func handleKeypressNormal(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 func handleKeypressInsert(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 
-	// The "esc" key exits insert mode
 	case "esc":
+		// Exit insert mode
 		m.Mode = ModeNormal
 		m.Eb.CommitChange()
 	}

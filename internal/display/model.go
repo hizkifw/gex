@@ -10,13 +10,18 @@ import (
 	"github.com/hizkifw/gex/pkg/core"
 )
 
-type EditingMode int
+type EditingMode string
+type ActiveColumn int
 
 const (
-	ModeNormal EditingMode = iota
-	ModeInsert
-	ModeVisual
-	ModeCommand
+	ModeNormal  EditingMode = "NORMAL"
+	ModeInsert  EditingMode = "INSERT"
+	ModeVisual  EditingMode = "VISUAL"
+	ModeReplace EditingMode = "REPLACE"
+	ModeCommand EditingMode = "COMMAND"
+
+	ActiveColumnHex ActiveColumn = iota
+	ActiveColumnAscii
 )
 
 var (
@@ -29,20 +34,23 @@ type Model struct {
 	Nrows, Ncols  int
 	ViewRow       int
 	Mode          EditingMode
+	ActiveColumn  ActiveColumn
 
 	ResponsiveCols bool
 }
 
 func NewModel() Model {
 	return Model{
-		Eb:             core.NewEditorBuffer("", EmptyReadSeeker),
-		Width:          0,
-		Height:         0,
-		Nrows:          0,
-		Ncols:          16,
-		ViewRow:        0,
-		ResponsiveCols: true,
-		Mode:           ModeNormal,
+		Eb:           core.NewEditorBuffer("", EmptyReadSeeker),
+		Width:        0,
+		Height:       0,
+		Nrows:        0,
+		Ncols:        16,
+		ViewRow:      0,
+		Mode:         ModeNormal,
+		ActiveColumn: ActiveColumnHex,
+
+		ResponsiveCols: false,
 	}
 }
 
@@ -63,6 +71,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.ResponsiveCols {
 			m.Ncols = cols
 		}
+		m.ScrollToCursor()
 
 	// Handle keypresses
 	case tea.KeyMsg:
@@ -87,27 +96,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	// View
-	ncols, nrows := CalculateViewSize(m.Width, m.Height)
-	sel1, sel2 := m.Eb.GetSelectionRange()
-	v, err := RenderView(m.Eb.ReadSeeker(), ncols, nrows, m.ViewRow, sel1, sel2)
+	v, err := m.RenderHexView()
 	if err != nil {
 		v = err.Error()
 	}
 
-	// Status
-	var status string
-	switch m.Mode {
-	case ModeNormal:
-		status = "NORMAL"
-	case ModeInsert:
-		status = "INSERT"
-	case ModeVisual:
-		status = "VISUAL"
-	case ModeCommand:
-		status = "COMMAND"
-	}
-
-	return fmt.Sprintf("%s\n%s\n", v, status)
+	return fmt.Sprintf("%s\n%s\n", v, m.Mode)
 }
 
 func (m *Model) LoadFile(name string) error {
@@ -117,4 +111,15 @@ func (m *Model) LoadFile(name string) error {
 	}
 	m.Eb = core.NewEditorBuffer(name, f)
 	return nil
+}
+
+// ScrollToCursor scrolls the view so that the cursor is visible.
+func (m *Model) ScrollToCursor() {
+	viewStart := int64(m.ViewRow) * int64(m.Ncols)
+	viewEnd := viewStart + int64(m.Ncols)*int64(m.Nrows)
+	if m.Eb.Cursor < viewStart {
+		m.ViewRow = int(m.Eb.Cursor / int64(m.Ncols))
+	} else if m.Eb.Cursor >= viewEnd {
+		m.ViewRow = int(m.Eb.Cursor/int64(m.Ncols)) - m.Nrows + 1
+	}
 }

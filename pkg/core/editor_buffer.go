@@ -106,3 +106,18 @@ func (b *EditorBuffer) CommitChange() {
 	// Clear the redo stack
 	b.RedoStack = make([]Change, 0)
 }
+
+// GetSelectionRange returns the start and end of the current selection.
+func (b *EditorBuffer) GetSelectionRange() (int64, int64) {
+	if b.Cursor < b.SelectionStart {
+		return b.Cursor, b.SelectionStart
+	}
+	return b.SelectionStart, b.Cursor
+}
+
+// Size returns the size of the buffer.
+func (b *EditorBuffer) Size() int64 {
+	rs := b.ReadSeeker()
+	size, _ := rs.Seek(0, io.SeekEnd)
+	return size
+}

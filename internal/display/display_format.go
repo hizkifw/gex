@@ -64,10 +64,28 @@ func RenderView(r io.ReadSeeker, ncols, nrows, startRow int, selectionStart, sel
 			}
 		}
 
-		sbAddr.WriteString("\n")
-		sbHex.WriteString(" \n")
-		sbAscii.WriteString("\n")
+		if row < nrows-1 {
+			sbAddr.WriteString("\n")
+			sbHex.WriteString(" \n")
+			sbAscii.WriteString("\n")
+		}
 	}
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, sbAddr.String(), sbHex.String(), sbAscii.String()), nil
+}
+
+// CalculateViewSize calculates the number of rows and columns that can fit in
+// the given width and height.
+func CalculateViewSize(width, height int) (ncols, nrows int) {
+	// 8 chars for the address + 2 padding
+	// 3 chars for each hex value + 1 padding every 8 chars
+	// 1 char for each ASCII value
+	ncols = (width - 8 - 2) / (3 + 1)
+
+	// Round down to nearest multiple of 8
+	ncols = ncols - ncols%8
+
+	// Allocate 2 rows for bottom status bar
+	nrows = height - 2
+	return
 }

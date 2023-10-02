@@ -41,6 +41,8 @@ type Model struct {
 
 	// Command mode text field
 	cmdText textinput.Model
+	// Temporary buffer for inputs
+	tmpText textinput.Model
 }
 
 func NewModel() Model {
@@ -57,6 +59,7 @@ func NewModel() Model {
 		ResponsiveCols: false,
 
 		cmdText: textinput.New(),
+		tmpText: textinput.New(),
 	}
 	m.SetMode(ModeNormal)
 	return m
@@ -94,6 +97,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case ModeVisual:
 			return HandleKeypressVisual(m, msg)
+
+		case ModeReplace:
+			return HandleKeypressReplace(m, msg)
 
 		case ModeCommand:
 			return HandleKeypressCommand(m, msg)
@@ -138,12 +144,19 @@ func (m *Model) SetMode(mode EditingMode) {
 	m.mode = mode
 
 	m.cmdText.SetValue("")
+	m.tmpText.SetValue("")
 	if mode == ModeCommand {
 		m.cmdText.Prompt = ":"
 		m.cmdText.Focus()
 	} else {
 		m.cmdText.Prompt = ""
 		m.cmdText.Blur()
+	}
+
+	if mode == ModeInsert || mode == ModeReplace {
+		m.tmpText.Focus()
+	} else {
+		m.tmpText.Blur()
 	}
 }
 

@@ -25,6 +25,11 @@ func HandleKeypressNormal(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		// Enter visual mode
 		m.SetMode(ModeVisual)
 
+	case "R":
+		// Enter replace mode
+		m.SetMode(ModeReplace)
+		m.eb.PreviewChange(&core.Change{Position: m.eb.Cursor, Removed: 0, Data: []byte{}})
+
 	case ":":
 		// Enter command mode
 		m.SetMode(ModeCommand)

@@ -2,7 +2,9 @@ package core
 
 import (
 	"io"
+	"os"
 
+	"github.com/hizkifw/gex/pkg/util"
 	"golang.org/x/exp/slices"
 )
 
@@ -52,6 +54,26 @@ func NewEditorBuffer(name string, buffer io.ReadSeeker) *EditorBuffer {
 		RedoStack: make([]Change, 0),
 		Preview:   nil,
 	}
+}
+
+// Reload reloads the buffer from the file that is backing it.
+func (b *EditorBuffer) Reload() error {
+	// Close the existing buffer if it is a file
+	if f, ok := b.Buffer.(*os.File); ok {
+		f.Close()
+	}
+
+	f, err := os.Open(b.Name)
+	if err != nil {
+		return err
+	}
+
+	b.Buffer = f
+	b.UndoStack = make([]Change, 0)
+	b.RedoStack = make([]Change, 0)
+	b.Preview = nil
+
+	return nil
 }
 
 // ReadSeeker returns a ReadSeeker with all changes applied to the underlying
@@ -111,11 +133,19 @@ func (b *EditorBuffer) CommitChange() {
 		return
 	}
 
-	b.UndoStack = append(b.UndoStack, *b.Preview)
+	chg := *b.Preview
 	b.Preview = nil
+	if chg.Removed == 0 && len(chg.Data) == 0 {
+		return
+	}
 
-	// Clear the redo stack
+	b.UndoStack = append(b.UndoStack, chg)
 	b.RedoStack = make([]Change, 0)
+}
+
+// IsDirty returns true if the buffer contains unsaved changes.
+func (b *EditorBuffer) IsDirty() bool {
+	return len(b.UndoStack) > 0 || b.Preview != nil
 }
 
 // GetSelectionRange returns the start and end of the current selection.
@@ -235,4 +265,45 @@ func (b *EditorBuffer) GetRegions() []Region {
 	})
 
 	return regions
+}
+
+// WriteToFile writes the buffer contents to the given file. Do not call this
+// with the same file that is backing the buffer. To safely save the buffer to
+// the same file, use Save.
+func (b *EditorBuffer) WriteToFile(filename string) (int64, error) {
+	f, err := os.Create(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	rs := b.ReadSeeker()
+	_, err = rs.Seek(0, io.SeekStart)
+	if err != nil {
+		return 0, err
+	}
+
+	return io.Copy(f, rs)
+}
+
+// Save saves the buffer to the file that is backing it. It will also create a
+// backup file. If fileName is empty, the buffer's name will be used.
+func (b *EditorBuffer) Save(fileName string) (int64, error) {
+	if fileName == "" {
+		fileName = b.Name
+	}
+
+	// Create the backup file
+	backupFilename := fileName + "~"
+
+	// Write the buffer to the backup file
+	n, err := b.WriteToFile(backupFilename)
+	if err != nil {
+		return n, err
+	}
+
+	// Swap the backup file with the original file
+	err = util.SwapFile(fileName, backupFilename)
+
+	return n, err
 }

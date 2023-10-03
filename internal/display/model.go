@@ -104,19 +104,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case ModeCommand:
 			return HandleKeypressCommand(m, msg)
 		}
+
+	case StatusTextMsg:
+		m.StatusMessage(msg.Text)
+
+	case BufferSavedMsg:
+		if err := m.eb.Reload(); err != nil {
+			m.StatusMessage(fmt.Sprintf("Error reloading buffer: %s", err))
+		} else {
+			m.StatusMessage(fmt.Sprintf("Saved %d bytes to %s", msg.BytesWritten, msg.FileName))
+		}
 	}
 
 	return m, nil
 }
 
 func (m Model) View() string {
-	// View
-	v, err := m.RenderHexView()
+	// Hex view
+	hexView, err := m.RenderHexView()
 	if err != nil {
-		v = err.Error()
+		hexView = err.Error()
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s", v, m.mode, m.cmdText.View())
+	// Status bar
+	statusBar := m.RenderStatus()
+
+	return fmt.Sprintf("%s\n%s", hexView, statusBar)
 }
 
 func (m *Model) LoadFile(name string) error {

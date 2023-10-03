@@ -1,12 +1,19 @@
 package display
 
 import (
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	var cmd tea.Cmd = nil
-	command := m.cmdText.Value()
+	split := strings.Split(m.cmdText.Value(), " ")
+	command := split[0]
+	args := []string{}
+	if len(split) > 1 {
+		args = split[1:]
+	}
 
 	switch msg.String() {
 
@@ -28,8 +35,26 @@ func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 
 	// Execute the command
 	switch command {
-	case "q":
+	case "q", "quit", "q!":
 		return m, tea.Quit
+
+	case "w", "write":
+		// Save the buffer
+		m.StatusMessage("Saving...")
+		fileName := m.eb.Name
+		if len(args) > 0 {
+			fileName = args[0]
+		}
+
+		return m, func() tea.Msg {
+			n, err := m.eb.Save(fileName)
+			if err != nil {
+				return StatusTextMsg{Text: "Error saving: " + err.Error()}
+			}
+
+			return BufferSavedMsg{FileName: fileName, BytesWritten: n}
+		}
+
 	default:
 		m.StatusMessage("Unknown command: " + command)
 	}

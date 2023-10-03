@@ -3,6 +3,7 @@ package display
 import (
 	"fmt"
 	"io"
+	"path"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -46,8 +47,9 @@ func (m Model) RenderHexView() (string, error) {
 			activeRegions := core.GetActiveRegions(regions, pos)
 
 			// Highlight selection
-			styleHex := MakeStyle(m.activeColumn == ActiveColumnHex, activeRegions)
-			styleAscii := MakeStyle(m.activeColumn == ActiveColumnAscii, activeRegions)
+			isEditing := m.mode == ModeInsert || m.mode == ModeReplace
+			styleHex := MakeStyle(m.activeColumn == ActiveColumnHex, isEditing, activeRegions)
+			styleAscii := MakeStyle(m.activeColumn == ActiveColumnAscii, isEditing, activeRegions)
 
 			// Hex column
 			if i >= n {
@@ -78,6 +80,30 @@ func (m Model) RenderHexView() (string, error) {
 		sbHex.String(),
 		sbAscii.String(),
 	), nil
+}
+
+// RenderStatus renders the status bar.
+func (m Model) RenderStatus() string {
+	var sb strings.Builder
+	sb.WriteString(statusStyle[m.mode].Render(string(m.mode)))
+
+	// Dirty indicator
+	sb.WriteString(statusBarStyle.Render(" "))
+	if m.eb.IsDirty() {
+		sb.WriteString(statusBarStyle.Render("*"))
+	}
+
+	// File name
+	fname := path.Base(m.eb.Name)
+	if fname == "." {
+		fname = "[No Name]"
+	}
+	sb.WriteString(statusBarStyle.Render(fname))
+
+	sb.WriteString("\n")
+	sb.WriteString(m.cmdText.View())
+
+	return sb.String()
 }
 
 // CalculateViewSize calculates the number of rows and columns that can fit in

@@ -34,17 +34,21 @@ func HandleKeypressNormal(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		// Enter command mode
 		m.SetMode(ModeCommand)
 
-	case "ctrl+c", "q":
-		// Exit program
-		return m, tea.Quit
+	case "ctrl+c":
+		// Tell user how to exit the program
+		m.StatusMessage("Press :q! to quit without saving")
 
 	case "u":
 		// Undo last change
-		m.eb.Undo()
+		if !m.eb.Undo() {
+			m.StatusMessage("Nothing to undo")
+		}
 
 	case "ctrl+r":
 		// Redo last change
-		m.eb.Redo()
+		if !m.eb.Redo() {
+			m.StatusMessage("Already at newest change")
+		}
 
 	case "tab":
 		// Toggle active column

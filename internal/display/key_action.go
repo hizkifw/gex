@@ -9,19 +9,24 @@ func handleAction(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	start, _ := m.eb.GetSelectionRange()
 	key := msg.String()
 	handled := true
+	setMode := ModeNormal
 
 	switch key {
 
-	case "x", "y":
+	case "x", "y", "s":
 		n, err := m.eb.CopySelection()
 		if err != nil {
 			panic(err)
 		}
 
-		if key == "x" {
+		if key == "x" || key == "s" {
 			// Delete byte under cursor
 			m.eb.PreviewChange(&core.Change{Position: start, Removed: int64(n), Data: []byte{}})
-			m.eb.CommitChange()
+			if key == "x" {
+				m.eb.CommitChange()
+			} else {
+				setMode = ModeInsert
+			}
 		}
 
 	case "p", "P":
@@ -54,7 +59,7 @@ func handleAction(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	if handled {
 		m.eb.Cursor = start
 		m.eb.SelectionStart = start
-		m.SetMode(ModeNormal)
+		m.SetMode(setMode)
 	}
 
 	return m, nil

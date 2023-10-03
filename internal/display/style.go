@@ -6,19 +6,46 @@ import (
 )
 
 var (
-	fgPrimaryColor   = lipgloss.Color("#eeeeee")
-	fgSecondaryColor = lipgloss.Color("#999999")
-	fgDirtyColor     = lipgloss.Color("#ffff00")
-	bgSelectedColor  = lipgloss.Color("#1e3a8a")
-	bgCursorColor    = lipgloss.Color("#1d4ed8")
+	fgPrimaryColor    = lipgloss.Color("#eeeeee")
+	fgSecondaryColor  = lipgloss.Color("#999999")
+	fgDirtyColor      = lipgloss.Color("#ffff00")
+	bgSelectedColor   = lipgloss.Color("#1e3a8a")
+	bgCursorColor     = lipgloss.Color("#1d4ed8")
+	bgEditingColor    = lipgloss.Color("#7E22CE")
+	bgStatusModeColor = lipgloss.Color("#444444")
+	bgStatusBarColor  = lipgloss.Color("#222222")
 
 	addrStyle = lipgloss.NewStyle().
 			Foreground(fgSecondaryColor).
 			Align(lipgloss.Right).
 			PaddingRight(1)
+
+	statusDefaultStyle = lipgloss.NewStyle().
+				Foreground(fgPrimaryColor).
+				Background(bgStatusModeColor).
+				PaddingLeft(1).
+				PaddingRight(1).
+				Bold(true)
+	statusEditingStyle = lipgloss.NewStyle().
+				Foreground(fgPrimaryColor).
+				Background(bgEditingColor).
+				PaddingLeft(1).
+				PaddingRight(1).
+				Bold(true)
+	statusBarStyle = lipgloss.NewStyle().
+			Foreground(fgPrimaryColor).
+			Background(bgStatusBarColor)
+
+	statusStyle = map[EditingMode]lipgloss.Style{
+		ModeNormal:  statusDefaultStyle,
+		ModeVisual:  statusEditingStyle,
+		ModeInsert:  statusEditingStyle,
+		ModeReplace: statusEditingStyle,
+		ModeCommand: statusDefaultStyle,
+	}
 )
 
-func MakeStyle(primary bool, activeRegions []core.Region) lipgloss.Style {
+func MakeStyle(primary bool, isEditing bool, activeRegions []core.Region) lipgloss.Style {
 	style := lipgloss.NewStyle()
 
 	if primary {
@@ -32,7 +59,11 @@ func MakeStyle(primary bool, activeRegions []core.Region) lipgloss.Style {
 		case core.RegionTypeSelection:
 			style = style.Background(bgSelectedColor)
 		case core.RegionTypeCursor:
-			style = style.Background(bgCursorColor)
+			if isEditing {
+				style = style.Background(bgEditingColor)
+			} else {
+				style = style.Background(bgCursorColor)
+			}
 		case core.RegionTypeDirty:
 			style = style.Foreground(fgDirtyColor)
 		}

@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/hizkifw/gex/pkg/core"
 )
 
 // RenderHexView renders the hex dump.
 func (m Model) RenderHexView() (string, error) {
-	// Calculate the selection start and end positions
-	selectionStart, selectionEnd := m.eb.GetSelectionRange()
+	// Get the list of regions
+	regions := m.eb.GetRegions()
 
 	r := m.eb.ReadSeeker()
 	offset := int64(m.viewRow * m.ncols)
@@ -41,11 +42,12 @@ func (m Model) RenderHexView() (string, error) {
 				sbHex.WriteString(" ")
 			}
 
+			// Check for any active regions at this position
+			activeRegions := core.GetActiveRegions(regions, pos)
+
 			// Highlight selection
-			selected := pos >= selectionStart && pos <= selectionEnd
-			cursor := pos == m.eb.Cursor
-			styleHex := MakeStyle(m.activeColumn == ActiveColumnHex, selected, cursor)
-			styleAscii := MakeStyle(m.activeColumn == ActiveColumnAscii, selected, cursor)
+			styleHex := MakeStyle(m.activeColumn == ActiveColumnHex, activeRegions)
+			styleAscii := MakeStyle(m.activeColumn == ActiveColumnAscii, activeRegions)
 
 			// Hex column
 			if i >= n {

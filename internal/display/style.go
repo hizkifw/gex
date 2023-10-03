@@ -9,8 +9,8 @@ var (
 	fgPrimaryColor   = lipgloss.Color("#eeeeee")
 	fgSecondaryColor = lipgloss.Color("#999999")
 	fgDirtyColor     = lipgloss.Color("#ffff00")
-	bgSelectedColor  = lipgloss.Color("#1E3A8A")
-	bgCursorColor    = lipgloss.Color("#1D4ED8")
+	bgSelectedColor  = lipgloss.Color("#1e3a8a")
+	bgCursorColor    = lipgloss.Color("#1d4ed8")
 
 	addrStyle = lipgloss.NewStyle().
 			Foreground(fgSecondaryColor).

@@ -152,35 +152,47 @@ func (b *EditorBuffer) GetRegions() []Region {
 		chgs = append(chgs, *b.Preview)
 	}
 
-	// Sort the changes by position
-	slices.SortFunc(chgs, func(i, j Change) int {
-		return int(i.Position - j.Position)
+	chgRanges := make([]Range, len(chgs))
+	for i := range chgs {
+		offset := int64(0)
+		for j := i + 1; j < len(chgs); j++ {
+			if chgs[j].Position < chgs[i].Position {
+				offset += int64(len(chgs[j].Data)) - chgs[j].Removed
+			}
+		}
+
+		chgRanges[i] = Range{
+			Start: chgs[i].Position + offset,
+			End:   chgs[i].Position + offset + int64(len(chgs[i].Data)) - 1,
+		}
+	}
+
+	// Sort the change ranges by position
+	slices.SortFunc(chgRanges, func(i, j Range) int {
+		return int(i.Start - j.Start)
 	})
 
 	// List of consolidated dirty region ranges
 	dirty := make([]Range, 0)
-	for n, chg := range chgs {
-		chStart := chg.Position
-		chEnd := chg.Position + int64(len(chg.Data)) - 1
-
+	for n, rng := range chgRanges {
 		if n == 0 {
 			// First change
-			dirty = append(dirty, Range{Start: chStart, End: chEnd})
+			dirty = append(dirty, Range{Start: rng.Start, End: rng.End})
 			continue
 		}
 
 		// Check if the change overlaps with the previous change
 		prev := dirty[len(dirty)-1]
-		if chStart <= prev.End {
+		if rng.Start <= prev.End {
 			// The change overlaps with the previous change, so merge them
-			prev.End = chEnd
+			prev.End = rng.End
 			dirty[len(dirty)-1] = prev
 			continue
 		}
 
 		// The change does not overlap with the previous change, so add it to the
 		// list of dirty regions
-		dirty = append(dirty, Range{Start: chStart, End: chEnd})
+		dirty = append(dirty, Range{Start: rng.Start, End: rng.End})
 	}
 
 	// Allocate the list of regions, with enough capacity for the dirty regions,

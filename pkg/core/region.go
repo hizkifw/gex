@@ -15,6 +15,11 @@ type Range struct {
 	End   int64
 }
 
+type IndexedRange struct {
+	Index int
+	Range
+}
+
 type Region struct {
 	Type RegionType
 	Range

@@ -99,7 +99,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return HandleKeypressVisual(m, msg)
 
 		case ModeReplace:
-			return HandleKeypressReplace(m, msg)
+			return HandleKeypressInsert(m, msg)
 
 		case ModeCommand:
 			return HandleKeypressCommand(m, msg)

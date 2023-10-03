@@ -73,7 +73,11 @@ func (m Model) RenderHexView() (string, error) {
 		}
 	}
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, sbAddr.String(), sbHex.String(), sbAscii.String()), nil
+	return lipgloss.JoinHorizontal(lipgloss.Top,
+		sbAddr.String(),
+		sbHex.String(),
+		sbAscii.String(),
+	), nil
 }
 
 // CalculateViewSize calculates the number of rows and columns that can fit in

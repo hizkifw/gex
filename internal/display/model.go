@@ -109,6 +109,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.StatusMessage(msg.Text)
 
 	case BufferSavedMsg:
+		if msg.Quit {
+			return m, tea.Quit
+		}
+
 		if err := m.eb.Reload(); err != nil {
 			m.StatusMessage(fmt.Sprintf("Error reloading buffer: %s", err))
 		} else {

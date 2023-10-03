@@ -35,18 +35,6 @@ func handleCursorMovement(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		// Move cursor to end of line
 		m.eb.Cursor += int64(m.ncols) - (m.eb.Cursor % int64(m.ncols)) - 1
 
-	case "w":
-		m.eb.Cursor += int64(2)
-
-	case "W":
-		m.eb.Cursor += int64(4)
-
-	case "b":
-		m.eb.Cursor -= int64(2)
-
-	case "B":
-		m.eb.Cursor -= int64(4)
-
 	case "g":
 		m.eb.Cursor = 0
 

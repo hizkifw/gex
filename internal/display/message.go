@@ -7,4 +7,5 @@ type StatusTextMsg struct {
 type BufferSavedMsg struct {
 	FileName     string
 	BytesWritten int64
+	Quit         bool
 }

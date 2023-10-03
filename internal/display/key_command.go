@@ -36,9 +36,13 @@ func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	// Execute the command
 	switch command {
 	case "q", "quit", "q!":
+		if m.eb.IsDirty() && command != "q!" {
+			m.StatusMessage("No write since last change (add ! to override)")
+			return m, nil
+		}
 		return m, tea.Quit
 
-	case "w", "write":
+	case "w", "write", "wq":
 		// Save the buffer
 		m.StatusMessage("Saving...")
 		fileName := m.eb.Name
@@ -52,7 +56,7 @@ func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 				return StatusTextMsg{Text: "Error saving: " + err.Error()}
 			}
 
-			return BufferSavedMsg{FileName: fileName, BytesWritten: n}
+			return BufferSavedMsg{FileName: fileName, BytesWritten: n, Quit: command == "wq"}
 		}
 
 	default:

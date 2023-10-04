@@ -1,6 +1,7 @@
 package display
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"path"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/hizkifw/gex/pkg/core"
+	"github.com/hizkifw/gex/pkg/util"
 )
 
 // RenderHexView renders the hex dump.
@@ -22,8 +24,9 @@ func (m Model) RenderHexView() (string, error) {
 		return "", err
 	}
 
-	// Read view from the underlying buffer
-	buf := make([]byte, m.nrows*m.ncols)
+	// Read view from the underlying buffer, plus some extra bytes to make sure
+	// the inspector can read ahead
+	buf := make([]byte, (m.nrows*m.ncols)+8)
 	n, err := r.Read(buf)
 	if err != nil && err != io.EOF {
 		return "", err
@@ -75,10 +78,39 @@ func (m Model) RenderHexView() (string, error) {
 		}
 	}
 
+	// Inspector
+	var sbInsK strings.Builder
+	var sbInsV strings.Builder
+	insp := util.Inspect(buf[m.eb.Cursor-offset:], binary.LittleEndian)
+	for i, r := range insp {
+		sbInsK.WriteString(r.Key)
+		sbInsV.WriteString(r.Val)
+		if i < len(insp)-1 {
+			sbInsK.WriteString("  \n")
+			sbInsV.WriteString("\n")
+		}
+	}
+	inspTable :=
+		padLeftStyle.Render(
+			lipgloss.JoinVertical(lipgloss.Left,
+				lipgloss.JoinHorizontal(lipgloss.Top,
+					windowTitleStyle.Render("Inspector"),
+					statusBarStyle.Render(" LE "),
+				),
+				windowStyle.Render(
+					lipgloss.JoinHorizontal(lipgloss.Top,
+						sbInsK.String(),
+						sbInsV.String(),
+					),
+				),
+			),
+		)
+
 	return lipgloss.JoinHorizontal(lipgloss.Top,
 		sbAddr.String(),
 		sbHex.String(),
 		sbAscii.String(),
+		inspTable,
 	), nil
 }
 

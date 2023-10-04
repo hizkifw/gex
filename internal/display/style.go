@@ -23,8 +23,7 @@ var (
 	statusDefaultStyle = lipgloss.NewStyle().
 				Foreground(fgPrimaryColor).
 				Background(bgStatusModeColor).
-				PaddingLeft(1).
-				PaddingRight(1).
+				Padding(0, 1, 0, 1).
 				Bold(true)
 	statusEditingStyle = lipgloss.NewStyle().
 				Foreground(fgPrimaryColor).
@@ -35,6 +34,19 @@ var (
 	statusBarStyle = lipgloss.NewStyle().
 			Foreground(fgPrimaryColor).
 			Background(bgStatusBarColor)
+	windowStyle = lipgloss.NewStyle().
+			Foreground(fgPrimaryColor).
+			Background(bgStatusBarColor).
+			BorderForeground(fgPrimaryColor).
+			Padding(1, 2, 1, 2)
+	windowTitleStyle = lipgloss.NewStyle().
+				Foreground(fgPrimaryColor).
+				Background(bgStatusModeColor).
+				Padding(0, 1, 0, 1).
+				Bold(true)
+
+	padLeftStyle = lipgloss.NewStyle().
+			PaddingLeft(1)
 
 	statusStyle = map[EditingMode]lipgloss.Style{
 		ModeNormal:  statusDefaultStyle,

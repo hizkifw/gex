@@ -26,6 +26,7 @@ up your data before editing any files.
 
 ### Normal Mode Commands
 
+- `tab`: Switch focus between the hex / ascii column.
 - `i` / `a`: Enter insert mode before / after the cursor position.
 - `v`: Enter visual mode to select a range of bytes.
 - `R`: Enter replace mode to overwrite bytes.

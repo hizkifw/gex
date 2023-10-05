@@ -14,7 +14,7 @@ up your data before editing any files.
 
 - `h` / `j` / `k` / `l`: Move the cursor left / down / up / right.
 - `0` / `$`: Move the cursor to the beginning / end of the current line.
-- `g` / `G`: Move the cursor to the start / end of the file.
+- `gg` / `G`: Move the cursor to the start / end of the file.
 - `ctrl+d` / `ctrl+u`: Scroll down / up one screen.
 
 ### Action Keys
@@ -38,3 +38,4 @@ up your data before editing any files.
 - `w`: Write changes to the file.
 - `q`: Quit gex! if there are no unsaved changes.
 - `q!`: Quit gex! forcefully, discarding unsaved changes.
+- `goto <offset>`: Jump to `<offset>` (hex).

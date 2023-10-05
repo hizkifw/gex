@@ -37,7 +37,7 @@ func HandleKeypressInsert(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 
 		// Update the cursor position
-		m.eb.Cursor = start + int64(m.tmpText.Position())
+		m.SetCursor(start + int64(m.tmpText.Position()))
 		m.eb.SelectionStart = m.eb.Cursor
 
 		// Set the preview change
@@ -64,7 +64,7 @@ func HandleKeypressInsert(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 
 		// Update the cursor position
-		m.eb.Cursor = start + int64(m.tmpText.Position()/2)
+		m.SetCursor(start + int64(m.tmpText.Position()/2))
 		m.eb.SelectionStart = m.eb.Cursor
 
 		// Set the preview change

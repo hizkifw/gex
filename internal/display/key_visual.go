@@ -7,10 +7,14 @@ import (
 func HandleKeypressVisual(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 
-	// The "esc" key exits visual mode
 	case "esc":
+		// Exit visual mode
 		m.SetMode(ModeNormal)
 		m.eb.SelectionStart = m.eb.Cursor
+
+	case ":":
+		// Enter command mode
+		m.SetMode(ModeCommand)
 	}
 
 	m, _ = handleAction(m, msg)

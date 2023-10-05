@@ -57,7 +57,7 @@ func handleAction(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	}
 
 	if handled {
-		m.eb.Cursor = start
+		m.SetCursor(start)
 		m.eb.SelectionStart = start
 		m.SetMode(setMode)
 	}

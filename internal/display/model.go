@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/hizkifw/gex/pkg/core"
+	"github.com/hizkifw/gex/pkg/util"
 )
 
 type EditingMode string
@@ -34,6 +36,7 @@ type Model struct {
 	width, height int
 	nrows, ncols  int
 	viewRow       int
+	prevMode      EditingMode
 	mode          EditingMode
 	activeColumn  ActiveColumn
 
@@ -43,6 +46,10 @@ type Model struct {
 	cmdText textinput.Model
 	// Temporary buffer for inputs
 	tmpText textinput.Model
+
+	// Statistics
+	framesRendered  uint64
+	renderTimeAvgNS float64
 }
 
 func NewModel() Model {
@@ -124,6 +131,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	tStart := time.Now()
+
 	// Hex view
 	hexView, err := m.RenderHexView()
 	if err != nil {
@@ -132,6 +141,11 @@ func (m Model) View() string {
 
 	// Status bar
 	statusBar := m.RenderStatus()
+
+	tEnd := time.Now()
+	renderTime := float64(tEnd.Sub(tStart).Nanoseconds())
+	m.renderTimeAvgNS = (m.renderTimeAvgNS*float64(m.framesRendered) + renderTime) / float64(m.framesRendered+1)
+	m.framesRendered++
 
 	return fmt.Sprintf("%s\n%s", hexView, statusBar)
 }
@@ -143,6 +157,17 @@ func (m *Model) LoadFile(name string) error {
 	}
 	m.eb = core.NewEditorBuffer(name, f)
 	return nil
+}
+
+// SetCursor sets the cursor position.
+func (m *Model) SetCursor(pos int64) {
+	m.eb.Cursor = util.Clamp(pos, 0, m.eb.Size()-1)
+	m.ScrollToCursor()
+}
+
+// MoveCursor moves the cursor by the given amount.
+func (m *Model) MoveCursor(amount int64) {
+	m.SetCursor(m.eb.Cursor + amount)
 }
 
 // ScrollToCursor scrolls the view so that the cursor is visible.
@@ -158,6 +183,7 @@ func (m *Model) ScrollToCursor() {
 
 // SetMode sets the editing mode.
 func (m *Model) SetMode(mode EditingMode) {
+	m.prevMode = m.mode
 	m.mode = mode
 
 	m.cmdText.SetValue("")

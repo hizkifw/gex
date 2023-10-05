@@ -81,7 +81,8 @@ func (m Model) RenderHexView() (string, error) {
 	// Inspector
 	var sbInsK strings.Builder
 	var sbInsV strings.Builder
-	insp := util.Inspect(buf[m.eb.Cursor-offset:], binary.LittleEndian)
+	inspOffset := int64(m.eb.Cursor) - offset
+	insp := util.Inspect(buf[inspOffset:], binary.LittleEndian)
 	for i, r := range insp {
 		sbInsK.WriteString(r.Key)
 		sbInsV.WriteString(r.Val)

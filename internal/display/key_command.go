@@ -1,38 +1,15 @@
 package display
 
 import (
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
-	var cmd tea.Cmd = nil
-	split := strings.Split(m.cmdText.Value(), " ")
-	command := split[0]
-	args := []string{}
-	if len(split) > 1 {
-		args = split[1:]
-	}
-
-	switch msg.String() {
-
-	// The "esc" key exits command mode
-	case "esc":
-		m.SetMode(ModeNormal)
-		return m, nil
-
-	// The "enter" key executes the command
-	case "enter":
-		m.SetMode(ModeNormal)
-
-	// Pass the keypress to the command text input
-	default:
-		m.cmdText.Focus()
-		m.cmdText, cmd = m.cmdText.Update(msg)
-		return m, cmd
-	}
-
+func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 	// Execute the command
 	switch command {
 	case "q", "quit", "q!":
@@ -59,8 +36,80 @@ func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 			return BufferSavedMsg{FileName: fileName, BytesWritten: n, Quit: command == "wq"}
 		}
 
+	case "goto":
+		// Go to a specific byte offset
+		if len(args) == 0 {
+			m.StatusMessage("Missing offset")
+			return m, nil
+		}
+
+		offsetHexStr := args[0]
+		if len(offsetHexStr)%2 != 0 {
+			offsetHexStr = "0" + offsetHexStr
+		}
+		offsetHex, err := hex.DecodeString(offsetHexStr)
+		if err != nil {
+			m.StatusMessage("Invalid offset")
+			return m, nil
+		}
+		if len(offsetHex) < 8 {
+			offsetHex = append(make([]byte, 8-len(offsetHex)), offsetHex...)
+		}
+
+		offset := binary.BigEndian.Uint64(offsetHex)
+		if offset > uint64(m.eb.Size()) {
+			m.StatusMessage(fmt.Sprintf("Offset %xh out of range", offset))
+			return m, nil
+		}
+
+		m.SetCursor(int64(offset))
+		if m.prevMode != ModeVisual {
+			m.eb.SelectionStart = m.eb.Cursor
+		}
+
 	default:
 		m.StatusMessage("Unknown command: " + command)
+	}
+
+	return m, nil
+}
+
+func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
+	var cmd tea.Cmd = nil
+
+	switch msg.String() {
+
+	// The "esc" key exits command mode
+	case "esc":
+		m.SetMode(m.prevMode)
+
+	// The "enter" key executes the command
+	case "enter":
+		split := strings.Split(m.cmdText.Value(), " ")
+		command := split[0]
+		args := []string{}
+		if len(split) > 1 {
+			args = split[1:]
+		}
+		m, cmd = handleCommand(m, command, args)
+		m.SetMode(m.prevMode)
+
+	// Pass the keypress to the command text input
+	default:
+		m.cmdText.Focus()
+		m.cmdText, cmd = m.cmdText.Update(msg)
+
+		// If the command text input is empty, exit command mode
+		cmdVal := m.cmdText.Value()
+		if cmdVal == "" {
+			m.SetMode(m.prevMode)
+		} else if cmdVal == "goto g" {
+			m, cmd = handleCommand(m, "goto", []string{"00"})
+			m.SetMode(m.prevMode)
+		} else if cmdVal == "goto G" {
+			m, cmd = handleCommand(m, "goto", []string{fmt.Sprintf("%x", m.eb.Size())})
+			m.SetMode(m.prevMode)
+		}
 	}
 
 	return m, cmd

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -39,7 +40,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 	case "goto":
 		// Go to a specific byte offset
 		if len(args) == 0 {
-			m.StatusMessage("Missing offset")
+			m.StatusMessage("Usage: goto <offset(h)>")
 			return m, nil
 		}
 
@@ -65,6 +66,51 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 		m.SetCursor(int64(offset))
 		if m.prevMode != ModeVisual {
 			m.eb.SelectionStart = m.eb.Cursor
+		}
+
+	case "set":
+		// Set a option
+		if len(args) < 2 {
+			m.StatusMessage("Usage: set <option> <value>")
+			return m, nil
+		}
+
+		option := args[0]
+		value := args[1]
+
+		switch option {
+		case "cols":
+			// Set the number of columns
+			cols, err := strconv.Atoi(value)
+			if err != nil {
+				m.StatusMessage("Invalid value")
+				return m, nil
+			}
+			m.ncols = cols
+
+		case "inspector.enabled":
+			// Enable/disable the inspector
+			enabled, err := strconv.ParseBool(value)
+			if err != nil {
+				m.StatusMessage("Invalid value")
+				return m, nil
+			}
+			m.inspectorEnabled = enabled
+
+		case "inspector.byteOrder":
+			// Set the inspector byte order
+			switch value {
+			case "big", "be", "b":
+				m.inspectorByteOrder = binary.BigEndian
+			case "little", "le", "l":
+				m.inspectorByteOrder = binary.LittleEndian
+			default:
+				m.StatusMessage("Expected either b or l")
+			}
+
+		default:
+			m.StatusMessage("Unknown option: " + option)
+
 		}
 
 	default:

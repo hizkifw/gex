@@ -39,3 +39,13 @@ up your data before editing any files.
 - `q`: Quit gex! if there are no unsaved changes.
 - `q!`: Quit gex! forcefully, discarding unsaved changes.
 - `goto <offset>`: Jump to `<offset>` (hex).
+- `set <option> <value>`: Set an option for the current session. See below for
+  the list of options.
+
+### Options
+
+- `cols <n>`: Number of colums displayed. Default is 16.
+- `inspector.enabled <true|false>`: Enable / disable the inspector
+- `inspector.byteOrder <byteOrder>`: Set the byte order of the inspector. Value
+  could be `big`, `be`, or `b` for BE, or `little`, `le`, or `l` for LE.
+  Defaults to LE.

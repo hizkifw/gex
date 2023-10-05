@@ -79,33 +79,40 @@ func (m Model) RenderHexView() (string, error) {
 	}
 
 	// Inspector
-	var sbInsK strings.Builder
-	var sbInsV strings.Builder
-	inspOffset := int64(m.eb.Cursor) - offset
-	insp := util.Inspect(buf[inspOffset:], binary.LittleEndian)
-	for i, r := range insp {
-		sbInsK.WriteString(r.Key)
-		sbInsV.WriteString(r.Val)
-		if i < len(insp)-1 {
-			sbInsK.WriteString("  \n")
-			sbInsV.WriteString("\n")
+	var inspTable string
+	if m.inspectorEnabled {
+		var sbInsK strings.Builder
+		var sbInsV strings.Builder
+		inspOffset := int64(m.eb.Cursor) - offset
+		insp := util.Inspect(buf[inspOffset:], m.inspectorByteOrder)
+		for i, r := range insp {
+			sbInsK.WriteString(r.Key)
+			sbInsV.WriteString(r.Val)
+			if i < len(insp)-1 {
+				sbInsK.WriteString("  \n")
+				sbInsV.WriteString("\n")
+			}
 		}
-	}
-	inspTable :=
-		padLeftStyle.Render(
-			lipgloss.JoinVertical(lipgloss.Left,
-				lipgloss.JoinHorizontal(lipgloss.Top,
-					windowTitleStyle.Render("Inspector"),
-					statusBarStyle.Render(" LE "),
-				),
-				windowStyle.Render(
+		byteOrderDisp := " LE "
+		if m.inspectorByteOrder == binary.BigEndian {
+			byteOrderDisp = " BE "
+		}
+		inspTable =
+			padLeftStyle.Render(
+				lipgloss.JoinVertical(lipgloss.Left,
 					lipgloss.JoinHorizontal(lipgloss.Top,
-						sbInsK.String(),
-						sbInsV.String(),
+						windowTitleStyle.Render("Inspector"),
+						statusBarStyle.Render(byteOrderDisp),
+					),
+					windowStyle.Render(
+						lipgloss.JoinHorizontal(lipgloss.Top,
+							sbInsK.String(),
+							sbInsV.String(),
+						),
 					),
 				),
-			),
-		)
+			)
+	}
 
 	return lipgloss.JoinHorizontal(lipgloss.Top,
 		sbAddr.String(),

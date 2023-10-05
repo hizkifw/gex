@@ -2,6 +2,7 @@ package display
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
@@ -42,6 +43,10 @@ type Model struct {
 
 	ResponsiveCols bool
 
+	// Inspector
+	inspectorEnabled   bool
+	inspectorByteOrder binary.ByteOrder
+
 	// Command mode text field
 	cmdText textinput.Model
 	// Temporary buffer for inputs
@@ -64,6 +69,9 @@ func NewModel() Model {
 		activeColumn: ActiveColumnHex,
 
 		ResponsiveCols: false,
+
+		inspectorEnabled:   true,
+		inspectorByteOrder: binary.LittleEndian,
 
 		cmdText: textinput.New(),
 		tmpText: textinput.New(),

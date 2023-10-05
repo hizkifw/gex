@@ -8,21 +8,20 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/hizkifw/gex/pkg/util"
 )
 
 func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 	// Execute the command
 	switch command {
-	case "q", "quit", "q!":
-		if m.eb.IsDirty() && command != "q!" {
-			m.StatusMessage("No write since last change (add ! to override)")
-			return m, nil
+	case "q", "quit", "q!", "quit!":
+		if m.eb.IsDirty() && !strings.HasSuffix(command, "!") {
+			return m, TeaMsgCmd(StatusTextMsg{Text: "No write since last change (add ! to override)"})
 		}
 		return m, tea.Quit
 
 	case "w", "write", "wq":
 		// Save the buffer
-		m.StatusMessage("Saving...")
 		fileName := m.eb.Name
 		if len(args) > 0 {
 			fileName = args[0]
@@ -40,8 +39,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 	case "goto":
 		// Go to a specific byte offset
 		if len(args) == 0 {
-			m.StatusMessage("Usage: goto <offset(h)>")
-			return m, nil
+			return m, TeaMsgCmd(StatusTextMsg{Text: "Usage: goto <offset(h)>"})
 		}
 
 		offsetHexStr := args[0]
@@ -50,8 +48,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 		}
 		offsetHex, err := hex.DecodeString(offsetHexStr)
 		if err != nil {
-			m.StatusMessage("Invalid offset")
-			return m, nil
+			return m, TeaMsgCmd(StatusTextMsg{Text: "Invalid offset"})
 		}
 		if len(offsetHex) < 8 {
 			offsetHex = append(make([]byte, 8-len(offsetHex)), offsetHex...)
@@ -59,8 +56,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 
 		offset := binary.BigEndian.Uint64(offsetHex)
 		if offset > uint64(m.eb.Size()) {
-			m.StatusMessage(fmt.Sprintf("Offset %xh out of range", offset))
-			return m, nil
+			return m, TeaMsgCmd(StatusTextMsg{Text: fmt.Sprintf("Offset %xh out of range", offset)})
 		}
 
 		m.SetCursor(int64(offset))
@@ -71,8 +67,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 	case "set":
 		// Set a option
 		if len(args) < 2 {
-			m.StatusMessage("Usage: set <option> <value>")
-			return m, nil
+			return m, TeaMsgCmd(StatusTextMsg{Text: "Usage: set <option> <value>"})
 		}
 
 		option := args[0]
@@ -83,8 +78,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 			// Set the number of columns
 			cols, err := strconv.Atoi(value)
 			if err != nil {
-				m.StatusMessage("Invalid value")
-				return m, nil
+				return m, TeaMsgCmd(StatusTextMsg{Text: "Invalid value"})
 			}
 			m.ncols = cols
 
@@ -92,8 +86,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 			// Enable/disable the inspector
 			enabled, err := strconv.ParseBool(value)
 			if err != nil {
-				m.StatusMessage("Invalid value")
-				return m, nil
+				return m, TeaMsgCmd(StatusTextMsg{Text: "Invalid value"})
 			}
 			m.inspectorEnabled = enabled
 
@@ -105,16 +98,16 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 			case "little", "le", "l":
 				m.inspectorByteOrder = binary.LittleEndian
 			default:
-				m.StatusMessage("Expected either b or l")
+				return m, TeaMsgCmd(StatusTextMsg{Text: "Expected either b or l"})
 			}
 
 		default:
-			m.StatusMessage("Unknown option: " + option)
+			return m, TeaMsgCmd(StatusTextMsg{Text: "Unknown option: " + option})
 
 		}
 
 	default:
-		m.StatusMessage("Unknown command: " + command)
+		return m, TeaMsgCmd(StatusTextMsg{Text: "Unknown command: " + command})
 	}
 
 	return m, nil
@@ -129,8 +122,28 @@ func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "esc":
 		m.SetMode(m.prevMode)
 
+	// The "up" and "down" keys cycle through the command history
+	case "up", "down":
+		if len(m.cmdHistory) == 0 {
+			break
+		}
+
+		if msg.String() == "up" {
+			m.cmdHistoryIndex--
+		} else {
+			m.cmdHistoryIndex++
+		}
+		m.cmdHistoryIndex = util.Clamp(m.cmdHistoryIndex, 0, len(m.cmdHistory))
+		if m.cmdHistoryIndex == len(m.cmdHistory) {
+			m.cmdText.SetValue("")
+		} else {
+			m.cmdText.SetValue(m.cmdHistory[m.cmdHistoryIndex])
+			m.cmdText.SetCursor(len(m.cmdText.Value()))
+		}
+
 	// The "enter" key executes the command
 	case "enter":
+		m.cmdHistory = append(m.cmdHistory, m.cmdText.Value())
 		split := strings.Split(m.cmdText.Value(), " ")
 		command := split[0]
 		args := []string{}

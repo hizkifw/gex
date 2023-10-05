@@ -51,6 +51,9 @@ type Model struct {
 	cmdText textinput.Model
 	// Temporary buffer for inputs
 	tmpText textinput.Model
+	// Command history
+	cmdHistory      []string
+	cmdHistoryIndex int
 
 	// Statistics
 	framesRendered  uint64
@@ -73,8 +76,10 @@ func NewModel() Model {
 		inspectorEnabled:   true,
 		inspectorByteOrder: binary.LittleEndian,
 
-		cmdText: textinput.New(),
-		tmpText: textinput.New(),
+		cmdText:         textinput.New(),
+		tmpText:         textinput.New(),
+		cmdHistory:      []string{},
+		cmdHistoryIndex: 0,
 	}
 	m.SetMode(ModeNormal)
 	return m
@@ -199,6 +204,7 @@ func (m *Model) SetMode(mode EditingMode) {
 	if mode == ModeCommand {
 		m.cmdText.Prompt = ":"
 		m.cmdText.Focus()
+		m.cmdHistoryIndex = len(m.cmdHistory)
 	} else {
 		m.cmdText.Prompt = ""
 		m.cmdText.Blur()

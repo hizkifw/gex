@@ -8,10 +8,10 @@ import (
 var (
 	fgPrimaryColor    = lipgloss.Color("#eeeeee")
 	fgSecondaryColor  = lipgloss.Color("#999999")
-	fgDirtyColor      = lipgloss.Color("#ffff00")
+	fgDirtyColor      = lipgloss.Color("#4ade80")
 	bgSelectedColor   = lipgloss.Color("#1e3a8a")
 	bgCursorColor     = lipgloss.Color("#1d4ed8")
-	bgEditingColor    = lipgloss.Color("#7E22CE")
+	bgEditingColor    = lipgloss.Color("#7e22ce")
 	bgStatusModeColor = lipgloss.Color("#444444")
 	bgStatusBarColor  = lipgloss.Color("#222222")
 

@@ -147,9 +147,7 @@ func HandleKeypressCommand(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 
 		// If the command text input is empty, exit command mode
 		cmdVal := m.cmdText.Value()
-		if cmdVal == "" {
-			m.SetMode(m.prevMode)
-		} else if cmdVal == "goto g" {
+		if cmdVal == "goto g" {
 			m, cmd = handleCommand(m, "goto", []string{"00"})
 			m.SetMode(m.prevMode)
 		} else if cmdVal == "goto G" {

@@ -1,6 +1,8 @@
 module github.com/hizkifw/gex
 
-go 1.20
+go 1.21.0
+
+toolchain go1.21.1
 
 require (
 	github.com/charmbracelet/bubbles v0.16.1

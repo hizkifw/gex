@@ -17,14 +17,28 @@ jobs:
         with:
           go-version: "1.21"
 
-      - name: Build
-        run: go build -v ./cmd/gex
-
       - name: Test
         run: go test -v ./...
 
-      - name: Archive
-        uses: actions/upload-artifact@v2
+      - name: Generate build files
+        uses: thatisuday/go-cross-build@v1
         with:
-          name: gex
-          path: ./gex
+            platforms: linux/amd64, darwin/amd64, windows/amd64
+            package: cmd/gex
+            name: gex
+            dest: dist
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: gex-linux-amd64
+          path: dist/gex-linux-amd64
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: gex-darwin-amd64
+          path: dist/gex-darwin-amd64
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: gex-windows-amd64
+          path: dist/gex-windows-amd64.exe

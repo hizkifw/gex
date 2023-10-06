@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -284,6 +285,39 @@ func (b *EditorBuffer) WriteToFile(filename string) (int64, error) {
 	}
 
 	return io.Copy(f, rs)
+}
+
+// SaveInPlace will modify the edited file in-place. This will only work if the
+// changes do not change the size of the file.
+func (b *EditorBuffer) SaveInPlace() error {
+	// Check if the changes modify the file size
+	for _, chg := range b.UndoStack {
+		if chg.Removed != int64(len(chg.Data)) {
+			return fmt.Errorf("change at position %d modifies file size", chg.Position)
+		}
+	}
+
+	// Open the file for writing
+	f, err := os.OpenFile(b.Name, os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open file for writing: %w", err)
+	}
+	defer f.Close()
+
+	// Apply the changes to the file
+	for _, chg := range b.UndoStack {
+		_, err = f.Seek(chg.Position, io.SeekStart)
+		if err != nil {
+			return fmt.Errorf("failed to seek to position %d: %w", chg.Position, err)
+		}
+
+		_, err = f.Write(chg.Data)
+		if err != nil {
+			return fmt.Errorf("failed to write data: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Save saves the buffer to the file that is backing it. It will also create a

@@ -141,7 +141,11 @@ func (m Model) RenderStatus() string {
 	sb.WriteString(statusBarStyle.Render(fname))
 
 	sb.WriteString("\n")
-	sb.WriteString(m.cmdText.View())
+	if m.statusError {
+		sb.WriteString(textErrorStyle.Render(m.cmdText.View()))
+	} else {
+		sb.WriteString(m.cmdText.View())
+	}
 
 	return sb.String()
 }

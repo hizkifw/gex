@@ -3,7 +3,8 @@ package display
 import tea "github.com/charmbracelet/bubbletea"
 
 type StatusTextMsg struct {
-	Text string
+	Text  string
+	Error bool
 }
 
 type BufferSavedMsg struct {

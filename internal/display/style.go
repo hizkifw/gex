@@ -14,12 +14,16 @@ var (
 	bgEditingColor    = lipgloss.Color("#7e22ce")
 	bgStatusModeColor = lipgloss.Color("#444444")
 	bgStatusBarColor  = lipgloss.Color("#222222")
+	bgErrorColor      = lipgloss.Color("#ff5555")
 
 	addrStyle = lipgloss.NewStyle().
 			Foreground(fgSecondaryColor).
 			Align(lipgloss.Right).
 			PaddingRight(1)
 
+	textErrorStyle = lipgloss.NewStyle().
+			Foreground(bgErrorColor).
+			Bold(true)
 	statusDefaultStyle = lipgloss.NewStyle().
 				Foreground(fgPrimaryColor).
 				Background(bgStatusModeColor).

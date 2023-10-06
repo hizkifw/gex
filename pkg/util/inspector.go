@@ -3,6 +3,9 @@ package util
 import (
 	"encoding/binary"
 	"math"
+	"unicode"
+	"unicode/utf16"
+	"unicode/utf8"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -40,6 +43,38 @@ func Inspect(buf []byte, byteOrder binary.ByteOrder) []Row {
 		res = append(res, Row{"Int64", p.Sprintf("%d", int64(byteOrder.Uint64(buf)))})
 		res = append(res, Row{"Float64", p.Sprintf("%f", math.Float64frombits(byteOrder.Uint64(buf)))})
 	}
+
+	inspectRune := func(rn rune, sz int) string {
+		var unicodeStr string
+		if rn == utf8.RuneError {
+			unicodeStr = "Invalid"
+		} else {
+			if unicode.IsGraphic(rn) {
+				unicodeStr = p.Sprintf("%s (%U, %d bytes)", string(rn), rn, sz)
+			} else {
+				unicodeStr = p.Sprintf("%U, %d bytes", rn, sz)
+			}
+		}
+		return unicodeStr
+	}
+
+	// UTF-8
+	rn, sz := utf8.DecodeRune(buf)
+	res = append(res, Row{"UTF-8", inspectRune(rn, sz)})
+
+	// UTF-16
+	utf16Buf := make([]uint16, 0, len(buf)/2)
+	for i := 0; i < len(buf)-1; i += 2 {
+		utf16Buf = append(utf16Buf, byteOrder.Uint16(buf[i:]))
+	}
+	rns := utf16.Decode(utf16Buf)
+	if len(rns) > 0 {
+		rn = rns[0]
+	} else {
+		rn = utf8.RuneError
+	}
+	sz = len(utf16.Encode([]rune{rn})) * 2
+	res = append(res, Row{"UTF-16", inspectRune(rn, sz)})
 
 	return res
 }

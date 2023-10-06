@@ -36,18 +36,18 @@ func HandleKeypressNormal(m Model, msg tea.KeyMsg) (Model, tea.Cmd) {
 
 	case "ctrl+c":
 		// Tell user how to exit the program
-		m.StatusMessage("Press :q! to quit without saving")
+		m.StatusMessage("Press :q! to quit without saving", false)
 
 	case "u":
 		// Undo last change
 		if !m.eb.Undo() {
-			m.StatusMessage("Nothing to undo")
+			m.StatusMessage("Nothing to undo", false)
 		}
 
 	case "ctrl+r":
 		// Redo last change
 		if !m.eb.Redo() {
-			m.StatusMessage("Already at newest change")
+			m.StatusMessage("Already at newest change", false)
 		}
 
 	case "tab":

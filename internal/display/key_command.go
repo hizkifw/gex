@@ -16,7 +16,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 	switch command {
 	case "q", "quit", "q!", "quit!":
 		if m.eb.IsDirty() && !strings.HasSuffix(command, "!") {
-			return m, TeaMsgCmd(StatusTextMsg{Text: "No write since last change (add ! to override)"})
+			return m, TeaMsgCmd(StatusTextMsg{Text: "No write since last change (add ! to override)", Error: true})
 		}
 		return m, tea.Quit
 
@@ -30,7 +30,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 		return m, func() tea.Msg {
 			n, err := m.eb.Save(fileName)
 			if err != nil {
-				return StatusTextMsg{Text: "Error saving: " + err.Error()}
+				return StatusTextMsg{Text: "Error saving: " + err.Error(), Error: true}
 			}
 
 			return BufferSavedMsg{FileName: fileName, BytesWritten: n, Quit: command == "wq"}
@@ -48,7 +48,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 		}
 		offsetHex, err := hex.DecodeString(offsetHexStr)
 		if err != nil {
-			return m, TeaMsgCmd(StatusTextMsg{Text: "Invalid offset"})
+			return m, TeaMsgCmd(StatusTextMsg{Text: "Invalid offset", Error: true})
 		}
 		if len(offsetHex) < 8 {
 			offsetHex = append(make([]byte, 8-len(offsetHex)), offsetHex...)
@@ -56,7 +56,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 
 		offset := binary.BigEndian.Uint64(offsetHex)
 		if offset > uint64(m.eb.Size()) {
-			return m, TeaMsgCmd(StatusTextMsg{Text: fmt.Sprintf("Offset %xh out of range", offset)})
+			return m, TeaMsgCmd(StatusTextMsg{Text: fmt.Sprintf("Offset %xh out of range", offset), Error: true})
 		}
 
 		m.SetCursor(int64(offset))
@@ -78,7 +78,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 			// Set the number of columns
 			cols, err := strconv.Atoi(value)
 			if err != nil {
-				return m, TeaMsgCmd(StatusTextMsg{Text: "Invalid value"})
+				return m, TeaMsgCmd(StatusTextMsg{Text: "Expected a number", Error: true})
 			}
 			m.ncols = cols
 
@@ -86,7 +86,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 			// Enable/disable the inspector
 			enabled, err := strconv.ParseBool(value)
 			if err != nil {
-				return m, TeaMsgCmd(StatusTextMsg{Text: "Invalid value"})
+				return m, TeaMsgCmd(StatusTextMsg{Text: "Expected either true or false", Error: true})
 			}
 			m.inspectorEnabled = enabled
 
@@ -98,16 +98,16 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 			case "little", "le", "l":
 				m.inspectorByteOrder = binary.LittleEndian
 			default:
-				return m, TeaMsgCmd(StatusTextMsg{Text: "Expected either b or l"})
+				return m, TeaMsgCmd(StatusTextMsg{Text: "Expected either b or l", Error: true})
 			}
 
 		default:
-			return m, TeaMsgCmd(StatusTextMsg{Text: "Unknown option: " + option})
+			return m, TeaMsgCmd(StatusTextMsg{Text: "Unknown option: " + option, Error: true})
 
 		}
 
 	default:
-		return m, TeaMsgCmd(StatusTextMsg{Text: "Unknown command: " + command})
+		return m, TeaMsgCmd(StatusTextMsg{Text: "Unknown command: " + command, Error: true})
 	}
 
 	return m, nil

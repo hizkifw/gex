@@ -8,7 +8,7 @@ import (
 
 // Change represents a change that has been made to a buffer. Changes are
 // described by a position, a length, and the data that was inserted at that
-// position. Length bytes starting at the Position were removed, and the Data
+// position. Removed bytes starting at the Position were removed, and the Data
 // was inserted at the Position.
 type Change struct {
 	// The position at which the change was made.
@@ -17,8 +17,8 @@ type Change struct {
 	// The number of bytes that were removed at the position.
 	Removed int64
 
-	// The data inserted at the position. If longer than Length, the extra bytes
-	// will replace the bytes at Position + Length.
+	// The data inserted at the position. If longer than Removed, the extra
+	// bytes will replace the bytes at Position + Removed.
 	Data []byte
 }
 

@@ -47,6 +47,8 @@ type Model struct {
 	inspectorEnabled   bool
 	inspectorByteOrder binary.ByteOrder
 
+	// Status bar error state
+	statusError bool
 	// Command mode text field
 	cmdText textinput.Model
 	// Temporary buffer for inputs
@@ -76,6 +78,7 @@ func NewModel() Model {
 		inspectorEnabled:   true,
 		inspectorByteOrder: binary.LittleEndian,
 
+		statusError:     false,
 		cmdText:         textinput.New(),
 		tmpText:         textinput.New(),
 		cmdHistory:      []string{},
@@ -126,7 +129,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case StatusTextMsg:
-		m.StatusMessage(msg.Text)
+		m.StatusMessage(msg.Text, msg.Error)
 
 	case BufferSavedMsg:
 		if msg.Quit {
@@ -134,9 +137,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if err := m.eb.Reload(); err != nil {
-			m.StatusMessage(fmt.Sprintf("Error reloading buffer: %s", err))
+			m.StatusMessage(fmt.Sprintf("Error reloading buffer: %s", err), true)
 		} else {
-			m.StatusMessage(fmt.Sprintf("Saved %d bytes to %s", msg.BytesWritten, msg.FileName))
+			m.StatusMessage(fmt.Sprintf("Saved %d bytes to %s", msg.BytesWritten, msg.FileName), false)
 		}
 	}
 
@@ -199,6 +202,7 @@ func (m *Model) SetMode(mode EditingMode) {
 	m.prevMode = m.mode
 	m.mode = mode
 
+	m.statusError = false
 	m.cmdText.SetValue("")
 	m.tmpText.SetValue("")
 	if mode == ModeCommand {
@@ -218,6 +222,7 @@ func (m *Model) SetMode(mode EditingMode) {
 }
 
 // StatusMessage sets the status message.
-func (m *Model) StatusMessage(msg string) {
+func (m *Model) StatusMessage(msg string, isError bool) {
 	m.cmdText.SetValue(msg)
+	m.statusError = isError
 }

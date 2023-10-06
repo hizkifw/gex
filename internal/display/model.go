@@ -30,6 +30,10 @@ const (
 
 var (
 	EmptyReadSeeker = io.ReadSeeker(bytes.NewReader([]byte{}))
+
+	// Debug Statistics
+	framesRendered  uint64
+	renderTimeAvgNS float64
 )
 
 type Model struct {
@@ -56,10 +60,6 @@ type Model struct {
 	// Command history
 	cmdHistory      []string
 	cmdHistoryIndex int
-
-	// Statistics
-	framesRendered  uint64
-	renderTimeAvgNS float64
 }
 
 func NewModel() Model {
@@ -160,8 +160,8 @@ func (m Model) View() string {
 
 	tEnd := time.Now()
 	renderTime := float64(tEnd.Sub(tStart).Nanoseconds())
-	m.renderTimeAvgNS = (m.renderTimeAvgNS*float64(m.framesRendered) + renderTime) / float64(m.framesRendered+1)
-	m.framesRendered++
+	renderTimeAvgNS = (renderTimeAvgNS*float64(framesRendered) + renderTime) / float64(framesRendered+1)
+	framesRendered++
 
 	return fmt.Sprintf("%s\n%s", hexView, statusBar)
 }

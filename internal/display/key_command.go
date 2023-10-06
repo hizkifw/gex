@@ -27,7 +27,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 			fileName = args[0]
 		}
 
-		return m, func() tea.Msg {
+		saveCmd := func() tea.Msg {
 			n, err := m.eb.Save(fileName)
 			if err != nil {
 				return StatusTextMsg{Text: "Error saving: " + err.Error(), Error: true}
@@ -35,6 +35,8 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 
 			return BufferSavedMsg{FileName: fileName, BytesWritten: n, Quit: command == "wq"}
 		}
+
+		return m, tea.Batch(TeaMsgCmd(StatusTextMsg{Text: "Saving " + fileName}), saveCmd)
 
 	case "goto":
 		// Go to a specific byte offset
@@ -81,6 +83,7 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 				return m, TeaMsgCmd(StatusTextMsg{Text: "Expected a number", Error: true})
 			}
 			m.ncols = cols
+			m.ScrollToCursor()
 
 		case "inspector.enabled":
 			// Enable/disable the inspector

@@ -129,7 +129,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case StatusTextMsg:
-		m.StatusMessage(msg.Text, msg.Error)
+		if m.mode != ModeCommand {
+			m.StatusMessage(msg.Text, msg.Error)
+		}
 
 	case BufferSavedMsg:
 		if msg.Quit {
@@ -186,10 +188,16 @@ func (m *Model) MoveCursor(amount int64) {
 	m.SetCursor(m.eb.Cursor + amount)
 }
 
+// GetViewBounds returns the start and end positions of the view.
+func (m *Model) GetViewBounds() (int64, int64) {
+	start := int64(m.viewRow) * int64(m.ncols)
+	end := start + int64(m.ncols)*int64(m.nrows)
+	return start, end
+}
+
 // ScrollToCursor scrolls the view so that the cursor is visible.
 func (m *Model) ScrollToCursor() {
-	viewStart := int64(m.viewRow) * int64(m.ncols)
-	viewEnd := viewStart + int64(m.ncols)*int64(m.nrows)
+	viewStart, viewEnd := m.GetViewBounds()
 	if m.eb.Cursor < viewStart {
 		m.viewRow = int(m.eb.Cursor / int64(m.ncols))
 	} else if m.eb.Cursor >= viewEnd {

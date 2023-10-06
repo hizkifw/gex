@@ -80,7 +80,7 @@ func (m Model) RenderHexView() (string, error) {
 
 	// Inspector
 	var inspTable string
-	if m.inspectorEnabled {
+	if m.inspectorEnabled && m.eb.Cursor >= offset && m.eb.Cursor < offset+int64(m.nrows*m.ncols) {
 		var sbInsK strings.Builder
 		var sbInsV strings.Builder
 		inspOffset := int64(m.eb.Cursor) - offset

@@ -23,7 +23,7 @@ jobs:
       - name: Generate build files
         uses: psethwick/go-cross-build@e7834b3e25f295c657460a48da60b176e459b8cf
         with:
-          platforms: linux/amd64, darwin/amd64, windows/amd64
+          platforms: linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64
           package: cmd/gex
           ldflags: -s -w
           name: gex
@@ -36,8 +36,18 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
+          name: gex-linux-arm64
+          path: dist/gex-linux-arm64
+
+      - uses: actions/upload-artifact@v2
+        with:
           name: gex-darwin-amd64
           path: dist/gex-darwin-amd64
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: gex-darwin-arm64
+          path: dist/gex-darwin-arm64
 
       - uses: actions/upload-artifact@v2
         with:

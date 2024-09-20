@@ -23,12 +23,20 @@ func handleCommand(m Model, command string, args []string) (Model, tea.Cmd) {
 	case "w", "write", "wq":
 		// Save the buffer
 		fileName := m.eb.Name
+		overwrite := true
 		if len(args) > 0 {
 			fileName = args[0]
+			overwrite = false
 		}
 
 		saveCmd := func() tea.Msg {
-			n, err := m.eb.Save(fileName)
+			var n int64
+			var err error
+			if overwrite {
+				n, err = m.eb.Save(fileName)
+			} else {
+				n, err = m.eb.WriteToFile(fileName)
+			}
 			if err != nil {
 				return StatusTextMsg{Text: "Error saving: " + err.Error(), Error: true}
 			}
